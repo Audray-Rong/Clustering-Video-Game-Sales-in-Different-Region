@@ -1,0 +1,220 @@
+---
+title: "Appendix"
+output: pdf_document
+---
+
+```{r}
+library(factoextra)
+library(purrr)
+library(cluster)
+```
+
+```{r}
+data <- read.csv("vgsales.csv")
+## data for sales
+dat.mat <- data[7:11]
+```
+
+k-means
+prepare for data
+```{r}
+## remove missing data
+mydat <- na.omit(dat.mat)
+
+## scale data
+scale.dat.nonlog <- scale(mydat)
+scale.dat.nonlog <- as.matrix(scale.dat.nonlog)
+```
+
+with log
+```{r}
+## replace 0
+mydat[mydat == 0] <- 0.05
+## transform into log
+log.mat <- log(mydat)
+## scale data
+# *sd + mean
+scale.dat <- scale(log.mat)
+scale.dat <- as.matrix(scale.dat)
+```
+
+
+```{r}
+## find the best k
+## elbow method
+set.seed(4893)
+wss <- function(k) {
+  kmeans(scale.dat, k, nstart = 40 )$tot.withinss
+}
+
+# Compute and plot wss for k = 1 to k = 15
+k.values <- 1:10
+
+# extract wss for 2-15 clusters
+wss_values <- map_dbl(k.values, wss)
+
+plot(k.values, wss_values,
+       type="b", pch = 19, frame = FALSE, main = 'k-means clustering',
+       xlab="Number of clusters K",
+       ylab="Total within-clusters sum of squares")
+## result k=2
+```
+
+
+```{r}
+set.seed(4893)
+## k=2
+km.out.2.n20.nonlog <- kmeans(scale.dat.nonlog, 2, nstart = 20)
+plot(scale.dat.nonlog, col = (km.out.2.n20.nonlog$cluster + 1), 
+     main = "K-Means Clustering Results with K = 2, nstart = 20", 
+     xlab = "", ylab = "", pch = 20, cex = 2)
+```
+
+
+
+
+
+```{r}
+set.seed(4893)
+## k=2
+km.out.2.n20 <- kmeans(scale.dat, 2, nstart = 20)
+plot(scale.dat, col = (km.out.2.n20$cluster + 1), 
+     main = "K-Means Clustering Results with K = 2, nstart = 20", 
+     xlab = "", ylab = "", pch = 20, cex = 2)
+```
+
+
+
+```{r}
+km.out.2.n30 <- kmeans(scale.dat, 2, nstart = 30)
+plot(scale.dat, col = (km.out.2.n30$cluster + 1), 
+     main = "K-Means Clustering Results with K = 2, nstart = 30", 
+     xlab = "", ylab = "", pch = 20, cex = 2)
+
+km.out.2.n40 <- kmeans(scale.dat, 2, nstart = 40)
+plot(scale.dat, col = (km.out.2.n40$cluster + 1), 
+     main = "K-Means Clustering Results with K = 2, nstart = 40", 
+     xlab = "", ylab = "", pch = 20, cex = 2)
+
+km.out.2.n50 <- kmeans(scale.dat, 2, nstart = 50)
+plot(scale.dat, col = (km.out.2.n50$cluster + 1), 
+     main = "K-Means Clustering Results with K = 2, nstart = 40", 
+     xlab = "", ylab = "", pch = 20, cex = 2)
+```
+
+
+```{r}
+## unscale the mean to get the really value
+km.out.2.n20$centers
+table(km.out.2.n20$cluster)
+a <- km.out.2.n20$cluster
+idx1 = which(a == 1)
+idx2 = which(a == 2)
+k.subset.1 <- data[idx1,]
+k.subset.2 <- data[idx2,]
+## save as csv file and find commen factor
+write.csv(k.subset.1, file = "k_group_1.csv")
+write.csv(k.subset.2, file = "k_group_2.csv")
+```
+
+
+```{r}
+## unscale + unlog
+ave.na <- mean(mydat$NA_Sales)
+sd.na <- sd(mydat$NA_Sales)
+na.1.log <- -0.4164558 * sd.na + ave.na
+na.1 <- exp(na.1.log)
+na.2.log <- 1.2479635 * sd.na + ave.na
+na.2 <- exp(na.2.log)
+
+ave.eu <- mean(mydat$EU_Sales)
+sd.eu <- sd(mydat$EU_Sales)
+eu.1.log <- -0.4241874 * sd.eu + ave.eu
+eu.1 <- exp(eu.1.log)
+eu.2.log <- 1.2711322 * sd.eu + ave.eu
+eu.2 <- exp(eu.2.log)
+
+ave.jp <- mean(mydat$JP_Sales)
+sd.jp <- sd(mydat$JP_Sales)
+jp.1.log <- -0.0801567 * sd.jp + ave.jp
+jp.1 <- exp(jp.1.log)
+jp.2.log <- 0.2401999 * sd.jp + ave.jp
+jp.2 <- exp(jp.2.log)
+
+ave.other <- mean(mydat$Other_Sales)
+sd.other <- sd(mydat$Other_Sales)
+other.1.log <- -0.3185162 * sd.other + ave.other
+other.1 <- exp(other.1.log)
+other.2.log <- 0.9544748 * sd.other + ave.other
+other.2 <- exp(other.2.log)
+
+ave.glb <- mean(mydat$Global_Sales)
+sd.glb <- sd(mydat$Global_Sales)
+glb.1.log <- -0.4216131 * sd.glb + ave.glb
+glb.1 <- exp(glb.1.log)
+glb.2.log <- 1.2634181 * sd.glb + ave.glb
+glb.2 <- exp(glb.2.log)
+```
+
+
+```{r}
+# Hierarchical Clustering
+dat.sclae <- scale(dat.mat)
+## Distance: euclidean
+dist.eucl <- dist(dat.sclae, method = "euclidean")
+## culstering
+# complete
+hlu.complete <- hclust (dist.eucl)
+hlu.average <- hclust (dist.eucl, method = "average")
+
+## Plot
+plot ( hlu.complete, xlab = "", sub = "", ylab = "",
+       labels = data$Rank , main = " Complete Linkage ")
+plot ( hlu.average, xlab = "", sub = "", ylab = "",
+       labels = data$Rank , main = " Average Linkage ")
+
+
+com.d <- as.dendrogram(hlu.complete)
+ave.d <- as.dendrogram(hlu.average)
+
+
+groups.comp <- cutree(hlu.complete, k=5)
+table(groups.comp)
+comp.idx1 = which(groups.comp == 1)
+comp.idx2 = which(groups.comp == 2)
+comp.idx3 = which(groups.comp == 3)
+comp.idx4 = which(groups.comp == 4)
+comp.idx5 = which(groups.comp == 5)
+com.subset.1 <- data[comp.idx1,]
+com.subset.2 <- data[comp.idx2,]
+com.subset.3 <- data[comp.idx3,]
+com.subset.4 <- data[comp.idx4,]
+com.subset.5 <- data[comp.idx5,]
+write.csv(com.subset.1, file = "com_g1.csv")
+
+
+groups.ave <- cutree(hlu.average, k=5)
+table(groups.ave)
+ave.idx1 = which(groups.ave == 1)
+ave.idx2 = which(groups.ave == 2)
+ave.idx3 = which(groups.ave == 3)
+ave.idx4 = which(groups.ave == 4)
+ave.idx5 = which(groups.ave == 5)
+ave.subset.1 <- data[ave.idx1,]
+ave.subset.2 <- data[ave.idx2,]
+ave.subset.3 <- data[ave.idx3,]
+ave.subset.4 <- data[ave.idx4,]
+ave.subset.5 <- data[ave.idx5,]
+```
+```{r}
+fviz_cluster(km.out.2.n20, geom = "point", data = scale.dat,
+             choose.vars =c("NA_Sales","EU_Sales") ) + ggtitle("k-means, NA vs. EU")
+fviz_cluster(list(data = dat.mat, cluster = groups.comp),EU_Sales,
+             choose.vars =c("NA_Sales","EU_Sales"))+ ggtitle("hierarchical, NA vs. EU")
+fviz_cluster(km.out.2.n20, geom = "point", data = scale.dat, 
+              choose.vars =c("JP_Sales","Other_Sales") ) + ggtitle("k = 2, JP vs. Others")
+fviz_cluster(km.out.2.n20, geom = "point", data = scale.dat, 
+             choose.vars =c("JP_Sales","Global_Sales") ) +ggtitle("k = 2, JP vs. Global")
+```
+
+
